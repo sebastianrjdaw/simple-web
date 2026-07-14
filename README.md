@@ -56,18 +56,18 @@ Si `simpleview.local` no resuelve, usa la IP privada mostrada por el instalador 
 ## Uso diario
 
 1. En **Contenidos**, pulsa **Subir archivos** y selecciona o arrastra imágenes JPEG/PNG/WebP y vídeos MP4/H.264. Los duplicados se reutilizan automáticamente.
-2. En **Editar pantalla**, crea un diseño y elige una de las seis plantillas.
-3. Pulsa **Editor visual**, arrastra contenidos o archivos directamente a cada zona, ordena la lista y configura duración, ajuste y transición. El editor clásico permanece disponible temporalmente como respaldo.
+2. En **Diseños**, crea un diseño y elige una de las seis plantillas.
+3. El sistema abre el **Editor visual**. Arrastra contenidos o archivos directamente a cada zona, ordena la lista y configura duración, ajuste y transición.
 4. Pulsa **Vista previa** para comprobar el borrador sin modificar la televisión.
 5. Pulsa **Publicar**. `/display` recibe la nueva versión en un máximo aproximado de tres segundos.
 6. Configura los intervalos en **Horarios**. En **Configuración** puedes pausar, forzar temporalmente la reproducción y seleccionar la imagen de respaldo.
-7. Consulta el estado en **Inicio** y crea o descarga copias desde **Copias de seguridad**.
+7. Consulta el estado en **Inicio**, fuerza la recarga del reproductor cuando lo necesites y gestiona copias desde **Copias de seguridad**.
 
 El reproductor utiliza `http://localhost/display`. Continúa con la última publicación almacenada en el navegador si el servidor deja de responder temporalmente.
 
 El tamaño máximo se configura con `SIMPLEVIEW_MAX_UPLOAD_MB`. El valor `0` elimina el límite funcional, pero siempre se respeta `SIMPLEVIEW_MAX_UPLOAD_HARD_MB` (4 GB por defecto), además del espacio disponible en disco.
 
-La Fase 2 protege una reserva mínima de 15 GB. En **Inicio → Almacenamiento** se muestran uso real, desglose, recursos grandes y contenidos sin utilizar. Para generar el informe complementario del host sin exponer Docker a la aplicación:
+La Fase 2 protege una reserva mínima de 15 GB. En **Inicio → Almacenamiento** se muestran uso real, desglose, recursos grandes, contenidos sin utilizar y diseños no activos. Las eliminaciones pasan por reglas seguras: no se borra contenido usado por la publicación activa ni por la imagen de respaldo. Para generar el informe complementario del host sin exponer Docker a la aplicación:
 
 ```bash
 ./scripts/storage-report.sh
@@ -87,8 +87,10 @@ docker compose exec app php artisan simpleview:cleanup-storage --dry-run
 
 Las copias de configuración incluyen SQLite y `.env`; las completas añaden originales y miniaturas. Cada archivo incluye un checksum SHA-256.
 
+Desde **Copias de seguridad → Configurar** puedes elegir copias diarias o cada dos días, hora, tipo y retención. La aplicación no acepta intervalos superiores a 48 horas y el scheduler comprueba copias pendientes cada quince minutos, de forma que recupera una copia perdida tras un apagado.
+
 ## Funcionalidad implementada
 
-Biblioteca multimedia, inspección con FFmpeg/ffprobe, miniaturas, deduplicación SHA-256, seis plantillas, zonas independientes, listas mixtas reordenables, borradores, vista previa, snapshots publicados, sondeo, caché sin conexión, heartbeat, registro de errores, horario semanal, respaldo, dashboard, copias locales y scheduler diario.
+Biblioteca multimedia, inspección con FFmpeg/ffprobe, miniaturas, deduplicación SHA-256, seis plantillas, editor visual principal, zonas independientes, listas mixtas reordenables, borradores, vista previa, snapshots publicados, sondeo, recarga forzada del reproductor, caché sin conexión, heartbeat, registro de errores, horario semanal, respaldo, dashboard, borrado seguro, almacenamiento accionable, copias locales y scheduler recuperable.
 
 La configuración del login gráfico automático y Chromium kiosco corresponde al equipo Ubuntu físico y se aplica durante la provisión final del OptiPlex. La especificación completa permanece en [docs/codex_context.md](docs/codex_context.md).

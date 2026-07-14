@@ -1,3 +1,3 @@
 <?php
-namespace App\Console\Commands; use App\Services\BackupService; use Illuminate\Console\Command;
-class BackupCommand extends Command {protected $signature='simpleview:backup {--full}';protected $description='Crea una copia de seguridad';public function handle():int{$b=app(BackupService::class)->create($this->option('full'));$this->info($b->filename);return self::SUCCESS;}}
+namespace App\Console\Commands; use App\Services\BackupScheduleService; use App\Services\BackupService; use Illuminate\Console\Command;
+class BackupCommand extends Command {protected $signature='simpleview:backup {--full} {--force}';protected $description='Crea una copia de seguridad';public function handle():int{$schedule=app(BackupScheduleService::class);if(!$this->option('force')&&!$this->option('full')&&!$schedule->due()){$this->info('No toca crear copia todavía. Próxima copia: '.$schedule->nextRun()->format('d/m/Y H:i'));return self::SUCCESS;}$b=app(BackupService::class)->create($this->option('full')||$schedule->typeIsFull());$this->info($b->filename);return self::SUCCESS;}}

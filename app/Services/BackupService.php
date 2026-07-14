@@ -1,9 +1,10 @@
 <?php
 namespace App\Services;
-use App\Models\Backup; use App\Models\MediaAsset; use Illuminate\Support\Facades\Process; use Illuminate\Support\Str;
+use App\Models\Backup; use App\Models\MediaAsset; use App\Models\Setting; use Illuminate\Support\Facades\Process; use Illuminate\Support\Str;
 class BackupService {
  public function __construct(private StorageMetricsService $metrics,private StoragePolicyService $policy){}
  public function create(bool $full=false):Backup {
+  $this->checkDestination();
   $estimate=(int)@filesize(config('database.connections.sqlite.database'))+(int)@filesize(base_path('.env'));
   if($full)$estimate+=(int)MediaAsset::sum('file_size')+(int)app(StorageMetricsService::class)->directorySize('/data/thumbnails');
   // Compression is unknown, so reserve the complete source estimate plus 10%.
@@ -22,5 +23,15 @@ class BackupService {
   } catch(\Throwable $e){$record->update(['status'=>'error','error_message'=>$e->getMessage(),'completed_at'=>now()]);throw $e;}
   return $record;
  }
- private function cleanup():void { $keep=(int)env('SIMPLEVIEW_BACKUP_RETENTION_DAYS',7); Backup::where('type','configuration')->where('completed_at','<',now()->subDays($keep))->get()->each(function(Backup $b){@unlink('/data/backups/'.$b->path);@unlink('/data/backups/'.$b->path.'.sha256');$b->delete();}); }
+ public function checkDestination(): array
+ {
+  $dir='/data/backups';
+  if(!is_dir($dir))mkdir($dir,0775,true);
+  if(!is_writable($dir))throw new \RuntimeException('El destino local de copias no permite escritura.');
+  $probe=$dir.'/.simpleview-probe-'.Str::random(8);
+  if(file_put_contents($probe,'ok')===false)throw new \RuntimeException('No se pudo escribir una prueba en el destino de copias.');
+  @unlink($probe);
+  return ['ok'=>true,'destination'=>'local','free_bytes'=>(int)@disk_free_space($dir)];
+ }
+ private function cleanup():void { $keep=max(3,min(60,(int)Setting::valueOf('backup_retention_count',7)));$completed=Backup::where('status','completed')->latest('completed_at')->get();$completed->skip($keep)->each(function(Backup $b){@unlink('/data/backups/'.$b->path);@unlink('/data/backups/'.$b->path.'.sha256');$b->delete();}); }
 }
