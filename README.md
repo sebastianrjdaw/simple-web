@@ -1,6 +1,6 @@
 # Simple View
 
-Aplicación local de cartelería digital para una pantalla. Esta entrega contiene la **Fase 1 funcional** descrita en [el plan](docs/implementation-plan.md): Laravel, Filament, SQLite, Nginx y Docker Compose.
+Aplicación local de cartelería digital para una pantalla. Incluye la Fase 1 y la **Fase 2 de editor visual y control de almacenamiento**, descrita en [su informe](docs/phase-2-implementation.md).
 
 ## Arranque rápido
 
@@ -57,7 +57,7 @@ Si `simpleview.local` no resuelve, usa la IP privada mostrada por el instalador 
 
 1. En **Contenidos**, pulsa **Subir archivos** y selecciona o arrastra imágenes JPEG/PNG/WebP y vídeos MP4/H.264. Los duplicados se reutilizan automáticamente.
 2. En **Editar pantalla**, crea un diseño y elige una de las seis plantillas.
-3. Abre el diseño, añade contenidos a cada zona, ordena la lista y configura duración, ajuste y transición.
+3. Pulsa **Editor visual**, arrastra contenidos o archivos directamente a cada zona, ordena la lista y configura duración, ajuste y transición. El editor clásico permanece disponible temporalmente como respaldo.
 4. Pulsa **Vista previa** para comprobar el borrador sin modificar la televisión.
 5. Pulsa **Publicar**. `/display` recibe la nueva versión en un máximo aproximado de tres segundos.
 6. Configura los intervalos en **Horarios**. En **Configuración** puedes pausar, forzar temporalmente la reproducción y seleccionar la imagen de respaldo.
@@ -66,6 +66,14 @@ Si `simpleview.local` no resuelve, usa la IP privada mostrada por el instalador 
 El reproductor utiliza `http://localhost/display`. Continúa con la última publicación almacenada en el navegador si el servidor deja de responder temporalmente.
 
 El tamaño máximo se configura con `SIMPLEVIEW_MAX_UPLOAD_MB`. El valor `0` elimina el límite funcional, pero siempre se respeta `SIMPLEVIEW_MAX_UPLOAD_HARD_MB` (4 GB por defecto), además del espacio disponible en disco.
+
+La Fase 2 protege una reserva mínima de 15 GB. En **Inicio → Almacenamiento** se muestran uso real, desglose, recursos grandes y contenidos sin utilizar. Para generar el informe complementario del host sin exponer Docker a la aplicación:
+
+```bash
+./scripts/storage-report.sh
+docker compose exec app php artisan simpleview:storage-report
+docker compose exec app php artisan simpleview:cleanup-storage --dry-run
+```
 
 ## Copias, restauración y despliegue
 

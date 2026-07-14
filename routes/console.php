@@ -9,3 +9,6 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('simpleview:backup')->cron(env('SIMPLEVIEW_BACKUP_SCHEDULE', '0 3 * * *'));
+Schedule::command('simpleview:storage-report --refresh')->everyFiveMinutes()->withoutOverlapping();
+Schedule::command('simpleview:storage-reconcile')->dailyAt(str_pad((string) env('SIMPLEVIEW_STORAGE_DEEP_SCAN_HOUR', 3), 2, '0', STR_PAD_LEFT).':15')->withoutOverlapping();
+Schedule::command('simpleview:cleanup-storage --temp --logs --expired-backups --orphan-thumbnails --force')->dailyAt('04:10')->withoutOverlapping();

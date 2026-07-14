@@ -1,8 +1,14 @@
 <?php
 namespace App\Services;
-use App\Models\Backup; use Illuminate\Support\Facades\Process; use Illuminate\Support\Str;
+use App\Models\Backup; use App\Models\MediaAsset; use Illuminate\Support\Facades\Process; use Illuminate\Support\Str;
 class BackupService {
+ public function __construct(private StorageMetricsService $metrics,private StoragePolicyService $policy){}
  public function create(bool $full=false):Backup {
+  $estimate=(int)@filesize(config('database.connections.sqlite.database'))+(int)@filesize(base_path('.env'));
+  if($full)$estimate+=(int)MediaAsset::sum('file_size')+(int)app(StorageMetricsService::class)->directorySize('/data/thumbnails');
+  // Compression is unknown, so reserve the complete source estimate plus 10%.
+  $current=$this->metrics->current(true);
+  if(!$this->policy->operationAllowed($current,(int)ceil($estimate*1.1)))throw new \RuntimeException($full?'No hay espacio seguro para un backup completo local. Usa una unidad externa, NAS o libera espacio.':'No hay espacio seguro para crear el backup de configuración.');
   $type=$full?'full':'configuration'; $name='simple-view-'.$type.'-'.now()->format('Ymd-His').'-'.Str::lower(Str::random(6)).'.tar.gz';
   $record=Backup::create(['filename'=>$name,'path'=>$name,'type'=>$type,'status'=>'processing','started_at'=>now()]);
   try {

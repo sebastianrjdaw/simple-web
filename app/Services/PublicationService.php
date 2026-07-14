@@ -3,12 +3,14 @@
 namespace App\Services;
 
 use App\Models\Layout;
+use App\Models\MediaAsset;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class PublicationService
 {
+    public function __construct(private StorageMetricsService $storageMetrics, private StoragePolicyService $storagePolicy) {}
     public function config(Layout $layout): array
     {
         $layout->load('zones.items.media');
@@ -17,11 +19,14 @@ class PublicationService
                 'transition'=>$z->transition_type,'transition_ms'=>$z->transition_duration_ms,
                 'items'=>$z->items->map(fn($i)=>['id'=>$i->media->id,'type'=>$i->media->media_type,
                     'url'=>route('media.stream',$i->media),'duration_ms'=>$i->image_duration_ms ?: $z->image_duration_default_ms,
-                    'fit'=>$i->image_fit ?: $z->image_fit_default])->values()])->values()];
+                    'fit'=>$i->image_fit ?: $z->image_fit_default,'transition'=>$i->transition_type ?: $z->transition_type,
+                    'transition_ms'=>$i->transition_duration_ms ?: $z->transition_duration_ms])->values()])->values()];
     }
 
     public function publish(Layout $draft, int $userId): Layout
     {
+        $storage=$this->storageMetrics->current();
+        if(!$this->storagePolicy->operationAllowed($storage)) throw ValidationException::withMessages(['layout'=>'El almacenamiento está en estado crítico. Libera espacio antes de publicar.']);
         $draft->load('zones.items.media');
         if ($draft->zones->isEmpty() || $draft->zones->contains(fn($z)=>$z->items->isEmpty()))
             throw ValidationException::withMessages(['layout'=>'Todas las zonas deben contener al menos un archivo.']);
@@ -36,6 +41,7 @@ class PublicationService
             $published->snapshot_json=[]; $published->save();
             foreach($draft->zones as $zone){ $copy=$zone->replicate(); $copy->layout_id=$published->id; $copy->save(); foreach($zone->items as $item){$ic=$item->replicate();$ic->layout_zone_id=$copy->id;$ic->save();}}
             $published->snapshot_json=$this->config($published); $published->save();
+            MediaAsset::whereIn('id',$published->zones->flatMap->items->pluck('media_asset_id'))->update(['last_used_at'=>now()]);
             DB::table('settings')->updateOrInsert(['key'=>'active_publication_version'],['value'=>(string)$version,'type'=>'integer','updated_at'=>now(),'created_at'=>now()]);
             return $published;
         });

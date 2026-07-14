@@ -1,0 +1,8 @@
+<?php
+namespace App\Http\Controllers;
+use App\Models\MediaAsset; use App\Models\Setting; use App\Services\StorageCleanupService; use App\Services\StorageMetricsService; use Illuminate\Http\Request; use Illuminate\Support\Facades\Storage;
+class StorageController extends Controller {
+ public function index(StorageMetricsService $metrics){$m=$metrics->current();$fallback=(int)Setting::where('key','fallback_media_asset_id')->value('value');$largest=MediaAsset::withCount('playlistItems')->orderByDesc('file_size')->limit(20)->get();$unused=MediaAsset::doesntHave('playlistItems')->when($fallback,fn($q)=>$q->whereKeyNot($fallback))->orderByDesc('file_size')->limit(100)->get();return view('storage',['metrics'=>$m,'largest'=>$largest,'unused'=>$unused]);}
+ public function refresh(StorageMetricsService $metrics){$metrics->measure();return back()->with('status','Métricas actualizadas.');}
+ public function cleanup(Request $request,StorageCleanupService $cleanup,StorageMetricsService $metrics){$data=$request->validate(['media'=>'required|array','media.*'=>'integer']);$fallback=(int)Setting::where('key','fallback_media_asset_id')->value('value');$assets=MediaAsset::whereIn('id',$data['media'])->doesntHave('playlistItems')->when($fallback,fn($q)=>$q->whereKeyNot($fallback))->get();foreach($assets as $asset){Storage::disk('media')->delete($asset->storage_path);if($asset->thumbnail_path)Storage::disk('thumbnails')->delete($asset->thumbnail_path);$asset->delete();}$cleanup->cleanup(['temp'=>true,'orphan_thumbnails'=>true],true);$metrics->measure();return back()->with('status',$assets->count().' contenidos no utilizados eliminados.');}
+}
