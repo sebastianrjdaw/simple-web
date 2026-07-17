@@ -56,6 +56,13 @@ class MediaDeletionService
                 'action' => route('filament.admin.resources.settings.index'),
             ];
         }
+        foreach (MediaAsset::where('fallback_media_asset_id', $assetId)->get(['id', 'display_name']) as $embed) {
+            $configuration[] = [
+                'setting' => 'web_embed_fallback',
+                'label' => 'Imagen de respaldo de "'.$embed->display_name.'"',
+                'action' => route('filament.admin.resources.media-assets.index'),
+            ];
+        }
 
         return [
             'active' => $this->uniqueUses($active),
@@ -181,6 +188,10 @@ class MediaDeletionService
         if ($status === 'inactive_only') {
             $count = count($uses['inactive']);
             return "Este contenido se utiliza en {$count} diseño(s) no activo(s). Puede retirarse de esos diseños y eliminarse definitivamente.";
+        }
+
+        if ($asset->media_type === 'web_embed') {
+            return 'Vas a eliminar definitivamente "'.$asset->display_name.'". Se eliminará su URL y configuración, no archivos multimedia.';
         }
 
         return 'Vas a eliminar definitivamente "'.$asset->display_name.'". Se liberarán '.$this->humanBytes((int) $asset->file_size).'.';

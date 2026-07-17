@@ -28,6 +28,9 @@ Route::middleware('auth')->group(function(){
  Route::get('/admin/layouts/{layout}/visual/state',[VisualEditorController::class,'state'])->name('visual-editor.state');
  Route::patch('/admin/layouts/{layout}/visual',[VisualEditorController::class,'save'])->name('visual-editor.save');
  Route::post('/admin/layouts/{layout}/visual/upload',[VisualEditorController::class,'upload'])->name('visual-editor.upload');
+ Route::post('/admin/layouts/{layout}/visual/web-embed',[VisualEditorController::class,'createWebEmbed'])->name('visual-editor.web-embed');
+ Route::post('/admin/web-embeds/test',[VisualEditorController::class,'testWebEmbed'])->name('web-embeds.test');
+ Route::get('/admin/web-embeds/preview',[VisualEditorController::class,'previewWebEmbed'])->name('web-embeds.preview');
  Route::get('/admin/layouts/{layout}/visual/media/{media}/uses',[VisualEditorController::class,'mediaUses'])->name('visual-editor.media-uses');
  Route::delete('/admin/layouts/{layout}/visual/media/{media}',[VisualEditorController::class,'deleteMedia'])->name('visual-editor.media-delete');
  Route::post('/admin/layouts/{layout}/visual/publish',[VisualEditorController::class,'publish'])->name('visual-editor.publish');

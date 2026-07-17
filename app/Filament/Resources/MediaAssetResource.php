@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\MediaAssetResource\Pages;
 use App\Models\MediaAsset;
 use App\Services\MediaDeletionService;
+use App\Services\WebEmbedService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -18,25 +19,31 @@ class MediaAssetResource extends Resource {
     public static function form(Form $form): Form { return $form->schema([
         Forms\Components\FileUpload::make('storage_path')->label('Archivos')->disk('media')->directory('originals')->storeFileNamesIn('original_filename')->multiple()->required()->acceptedFileTypes(['image/jpeg','image/png','image/webp','video/mp4'])->maxSize(self::maxUploadKilobytes())->helperText(self::uploadLimitText())->visibleOn('create'),
         Forms\Components\TextInput::make('display_name')->label('Nombre visible')->maxLength(255)->visibleOn('edit'),
+        Forms\Components\TextInput::make('embed_url')->label('URL de AIMHARDER')->maxLength(2048)->visible(fn(?MediaAsset $record)=>$record?->media_type==='web_embed'),
+        Forms\Components\Select::make('fallback_media_asset_id')->label('Imagen de respaldo')->options(fn()=>MediaAsset::where('media_type','image')->where('status','ready')->pluck('display_name','id'))->searchable()->placeholder('Usar respaldo global')->visible(fn(?MediaAsset $record)=>$record?->media_type==='web_embed'),
     ]); }
     public static function table(Table $table): Table { return $table->columns([
         Tables\Columns\ImageColumn::make('thumbnail_path')->label('')->disk('thumbnails')->square(),
         Tables\Columns\TextColumn::make('display_name')->label('Nombre')->searchable()->sortable(),
-        Tables\Columns\TextColumn::make('media_type')->label('Tipo')->badge()->formatStateUsing(fn($state)=>$state==='image'?'Imagen':'Vídeo'),
+        Tables\Columns\TextColumn::make('media_type')->label('Tipo')->badge()->formatStateUsing(fn($state)=>['image'=>'Imagen','video'=>'Vídeo','web_embed'=>'Página web'][$state]??$state),
+        Tables\Columns\TextColumn::make('provider')->label('Proveedor')->badge()->placeholder('-')->formatStateUsing(fn($state)=>$state==='aimharder'?'AIMHARDER':$state),
+        Tables\Columns\TextColumn::make('embed_url')->label('Dominio')->formatStateUsing(fn($state)=>$state?parse_url($state,PHP_URL_HOST):'-')->toggleable(),
         Tables\Columns\TextColumn::make('file_size')->label('Tamaño')->formatStateUsing(fn($state)=>number_format($state/1048576,1).' MB')->sortable(),
         Tables\Columns\TextColumn::make('status')->label('Estado')->badge(),
         Tables\Columns\IconColumn::make('in_use')->label('En uso')->boolean(),
         Tables\Columns\TextColumn::make('last_used_at')->label('Último uso')->dateTime('d/m/Y H:i')->sortable()->placeholder('Nunca'),
         Tables\Columns\TextColumn::make('created_at')->label('Subido')->dateTime('d/m/Y H:i')->sortable(),
     ])->filters([
-        Tables\Filters\SelectFilter::make('media_type')->label('Tipo')->options(['image'=>'Imágenes','video'=>'Vídeos']),
+        Tables\Filters\SelectFilter::make('media_type')->label('Tipo')->options(['image'=>'Imágenes','video'=>'Vídeos','web_embed'=>'Páginas web']),
+        Tables\Filters\SelectFilter::make('provider')->label('Proveedor')->options(['aimharder'=>'AIMHARDER']),
         Tables\Filters\SelectFilter::make('status')->label('Estado')->options(['ready'=>'Listo','processing'=>'Procesando','error'=>'Con error']),
         Tables\Filters\Filter::make('unused')->label('Sin uso')->query(fn(Builder $query)=>$query->doesntHave('playlistItems')),
         Tables\Filters\Filter::make('large')->label('Más de 500 MB')->query(fn(Builder $query)=>$query->where('file_size','>=',500*1024*1024)),
         Tables\Filters\Filter::make('never_used')->label('Nunca utilizados')->query(fn(Builder $query)=>$query->whereNull('last_used_at')),
     ])
       ->actions([
-        Tables\Actions\Action::make('download')->label('Descargar')->icon('heroicon-o-arrow-down-tray')->url(fn(MediaAsset $record)=>route('media.download',$record)),
+        Tables\Actions\Action::make('download')->label('Descargar')->icon('heroicon-o-arrow-down-tray')->visible(fn(MediaAsset $record)=>$record->media_type!=='web_embed')->url(fn(MediaAsset $record)=>route('media.download',$record)),
+        Tables\Actions\Action::make('test_embed')->label('Probar')->icon('heroicon-o-globe-alt')->visible(fn(MediaAsset $record)=>$record->media_type==='web_embed')->action(function(MediaAsset $record){$result=app(WebEmbedService::class)->connectivity($record->embed_url);$record->update(['validation_status'=>$result['status'],'validation_message'=>$result['message']]);Notification::make()->title($result['message'])->{$result['ok']?'success':'warning'}()->send();}),
         Tables\Actions\Action::make('uses')->label('Ver usos')->icon('heroicon-o-map')->modalHeading(fn(MediaAsset $record)=>'Usos de '.$record->display_name)->modalSubmitAction(false)->modalCancelActionLabel('Cerrar')->modalContent(fn(MediaAsset $record)=>view('filament.media-uses',['asset'=>$record,'classification'=>app(MediaDeletionService::class)->classify($record)])),
         Tables\Actions\EditAction::make(),
         Tables\Actions\Action::make('delete_safe')

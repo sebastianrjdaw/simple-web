@@ -13,6 +13,11 @@ return [
     'backup_frequency_days' => min(2, max(1, (int) env('SIMPLEVIEW_BACKUP_FREQUENCY_DAYS', 2))),
     'backup_time' => env('SIMPLEVIEW_BACKUP_TIME', '03:00'),
     'backup_retention_count' => max(3, (int) env('SIMPLEVIEW_BACKUP_RETENTION_COUNT', 7)),
+    'web_embed' => [
+        'allowed_hosts' => array_values(array_filter(array_map('trim', explode(',', env('SIMPLEVIEW_WEB_EMBED_ALLOWED_HOSTS', 'aimharder.com,*.aimharder.com'))))),
+        'max_iframes_per_screen' => (int) env('SIMPLEVIEW_WEB_EMBED_MAX_IFRAMES', 4),
+        'default_url' => env('SIMPLEVIEW_AIMHARDER_DEFAULT_URL', 'https://gamancrossfit.aimharder.com/navwod'),
+    ],
     'storage' => [
         'data_path' => env('SIMPLEVIEW_DATA_PATH', '/data'),
         'warning_percent' => (float) env('SIMPLEVIEW_STORAGE_WARNING_PERCENT', 80),

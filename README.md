@@ -67,6 +67,29 @@ El reproductor utiliza `http://localhost/display`. Continúa con la última publ
 
 El tamaño máximo se configura con `SIMPLEVIEW_MAX_UPLOAD_MB`. El valor `0` elimina el límite funcional, pero siempre se respeta `SIMPLEVIEW_MAX_UPLOAD_HARD_MB` (4 GB por defecto), además del espacio disponible en disco.
 
+## Integración con AIMHARDER
+
+Simple View puede mostrar el WOD público de AIMHARDER en una zona del diseño sin pegar HTML. En el editor visual pulsa **WOD de AIMHARDER**, revisa la URL pública, por ejemplo `https://gamancrossfit.aimharder.com/navwod`, y pulsa **Añadir a esta zona**.
+
+El bloque AIMHARDER ocupa la zona completa: no se mezcla con imágenes ni vídeos en esa misma zona. En otras zonas puedes seguir usando listas normales de fotos y vídeos.
+
+Opciones disponibles:
+
+- actualización del iframe cada 5, 15, 30 o 60 minutos, o sin recarga;
+- interacción desactivada por defecto para evitar clics accidentales en la pantalla;
+- imagen local de respaldo;
+- prueba de visualización desde el panel, que abre una ventana con el mismo iframe/sandbox que usará el reproductor.
+
+La página necesita Internet y depende de que AIMHARDER permita mostrarse dentro de un iframe. Si el proveedor bloquea la incrustación mediante `X-Frame-Options` o CSP, Simple View no intenta saltarse esa protección: solicita a AIMHARDER una URL pública preparada para incrustar.
+
+La política CSP permite marcos solo desde Simple View y AIMHARDER:
+
+```text
+frame-src 'self' https://aimharder.com https://*.aimharder.com;
+```
+
+Los dominios permitidos se configuran técnicamente con `SIMPLEVIEW_WEB_EMBED_ALLOWED_HOSTS`; no hay editor libre de dominios en el panel para evitar usar iframes hacia hosts internos o no autorizados.
+
 La Fase 2 protege una reserva mínima de 15 GB. En **Inicio → Almacenamiento** se muestran uso real, desglose, recursos grandes, contenidos sin utilizar y diseños no activos. Las eliminaciones pasan por reglas seguras: no se borra contenido usado por la publicación activa ni por la imagen de respaldo. Para generar el informe complementario del host sin exponer Docker a la aplicación:
 
 ```bash
