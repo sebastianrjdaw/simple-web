@@ -1,9 +1,6 @@
 services:
   init-storage:
     image: simple-view-app:latest
-    build:
-      context: .
-      dockerfile: docker/app/Dockerfile.coolify
     user: root
     entrypoint: ["/bin/sh", "-lc"]
     command:
@@ -91,9 +88,6 @@ services:
 
   scheduler:
     image: simple-view-app:latest
-    build:
-      context: .
-      dockerfile: docker/app/Dockerfile.coolify
     restart: unless-stopped
     environment:
       <<: *simpleview-env
