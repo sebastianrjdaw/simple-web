@@ -1,0 +1,29 @@
+stages:
+  - validate
+  - build
+
+default:
+  tags:
+    - docker
+    - nas
+    - trusted
+
+composer_validate:
+  stage: validate
+  image: composer:2
+  script:
+    - composer validate --no-check-publish
+
+container_image:
+  stage: build
+  image: docker:27-cli
+  before_script:
+    - printf '%s' "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+  script:
+    - docker build --pull -f docker/app/Dockerfile -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA" .
+    - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+    - docker tag "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA" "$CI_REGISTRY_IMAGE:latest"
+    - docker push "$CI_REGISTRY_IMAGE:latest"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+
