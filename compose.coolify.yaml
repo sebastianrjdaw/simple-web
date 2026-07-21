@@ -32,6 +32,7 @@ services:
       DB_DATABASE: /data/database/database.sqlite
       SESSION_DRIVER: database
       SESSION_ENCRYPT: "true"
+      SESSION_SECURE_COOKIE: "true"
       QUEUE_CONNECTION: database
       CACHE_STORE: database
       MAIL_MAILER: smtp
