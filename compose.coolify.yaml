@@ -34,7 +34,11 @@ services:
       SESSION_ENCRYPT: "true"
       SESSION_SECURE_COOKIE: "true"
       QUEUE_CONNECTION: database
-      CACHE_STORE: database
+      CACHE_STORE: file
+      DB_BUSY_TIMEOUT: "5000"
+      DB_JOURNAL_MODE: WAL
+      DB_SYNCHRONOUS: NORMAL
+      SIMPLEVIEW_ACCEL_REDIRECT: "true"
       MAIL_MAILER: smtp
       MAIL_HOST: 100.111.21.85
       MAIL_PORT: "1025"
@@ -75,6 +79,7 @@ services:
       - "127.0.0.1:8091:80"
     volumes:
       - simpleview-public:/var/www/html/public:ro
+      - simpleview-data:/data:ro
     depends_on:
       init-storage:
         condition: service_completed_successfully
@@ -86,6 +91,24 @@ services:
       timeout: 5s
       retries: 3
     mem_limit: 128m
+
+  worker:
+    image: simple-view-app:latest
+    restart: unless-stopped
+    environment:
+      <<: *simpleview-env
+      SIMPLEVIEW_SKIP_BOOTSTRAP: "true"
+    command: ["php", "artisan", "queue:work", "database", "--queue=media,default", "--sleep=1", "--tries=2", "--timeout=900", "--max-time=3600"]
+    volumes:
+      - simpleview-data:/data
+      - simpleview-public:/var/www/html/public
+    depends_on:
+      init-storage:
+        condition: service_completed_successfully
+      app:
+        condition: service_healthy
+    stop_grace_period: 30s
+    mem_limit: 512m
 
   scheduler:
     image: simple-view-app:latest

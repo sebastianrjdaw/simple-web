@@ -10,6 +10,7 @@ return [
     'max_upload_hard_mb' => (int) env('SIMPLEVIEW_MAX_UPLOAD_HARD_MB', 4096),
     'data_path' => env('SIMPLEVIEW_DATA_PATH', '/data'),
     'visual_editor_enabled' => env('SIMPLEVIEW_VISUAL_EDITOR_ENABLED', true),
+    'accel_redirect' => env('SIMPLEVIEW_ACCEL_REDIRECT', false),
     'backup_frequency_days' => min(2, max(1, (int) env('SIMPLEVIEW_BACKUP_FREQUENCY_DAYS', 2))),
     'backup_time' => env('SIMPLEVIEW_BACKUP_TIME', '03:00'),
     'backup_retention_count' => max(3, (int) env('SIMPLEVIEW_BACKUP_RETENTION_COUNT', 7)),

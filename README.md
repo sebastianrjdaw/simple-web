@@ -37,6 +37,7 @@ docker compose logs -f
 docker compose exec app php artisan migrate --force
 docker compose exec app php artisan simpleview:create-admin
 docker compose exec app php artisan simpleview:reset-admin-password
+docker compose logs -f worker
 ```
 
 Los datos están en `data/`, fuera de las capas de los contenedores. La base SQLite se guarda en `data/database/database.sqlite`; los directorios de medios, miniaturas, copias, logs y caché ya están reservados para las fases siguientes.
@@ -55,7 +56,7 @@ Si `simpleview.local` no resuelve, usa la IP privada mostrada por el instalador 
 
 ## Uso diario
 
-1. En **Contenidos**, pulsa **Subir archivos** y selecciona o arrastra imágenes JPEG/PNG/WebP y vídeos MP4/H.264. Los duplicados se reutilizan automáticamente.
+1. En **Contenidos**, pulsa **Subir archivos** y selecciona o arrastra imágenes JPEG/PNG/WebP y vídeos MP4/H.264. La transferencia muestra su progreso y la validación continúa en segundo plano; puedes seguir trabajando. Los duplicados se reutilizan automáticamente.
 2. En **Diseños**, crea un diseño y elige una de las seis plantillas.
 3. El sistema abre el **Editor visual**. Arrastra contenidos o archivos directamente a cada zona, ordena la lista y configura duración, ajuste y transición.
 4. Pulsa **Vista previa** para comprobar el borrador sin modificar la televisión.
@@ -92,5 +93,7 @@ Desde **Copias de seguridad → Configurar** puedes elegir copias diarias o cada
 ## Funcionalidad implementada
 
 Biblioteca multimedia, inspección con FFmpeg/ffprobe, miniaturas, deduplicación SHA-256, seis plantillas, editor visual principal, zonas independientes, listas mixtas reordenables, borradores, vista previa, snapshots publicados, sondeo, recarga forzada del reproductor, caché sin conexión, heartbeat, registro de errores, horario semanal, respaldo, dashboard, borrado seguro, almacenamiento accionable, copias locales y scheduler recuperable.
+
+La arquitectura y las decisiones de rendimiento de la carga asíncrona están documentadas en [docs/ASYNC_UPLOAD_IMPROVEMENT_PLAN.md](docs/ASYNC_UPLOAD_IMPROVEMENT_PLAN.md).
 
 La configuración del login gráfico automático y Chromium kiosco corresponde al equipo Ubuntu físico y se aplica durante la provisión final del OptiPlex. La especificación completa permanece en [docs/codex_context.md](docs/codex_context.md).

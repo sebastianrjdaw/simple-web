@@ -27,6 +27,7 @@ services:
       - "${SIMPLEVIEW_HTTP_PORT:-80}:80"
     volumes:
       - public_assets:/var/www/html/public:ro
+      - ./data:/data:ro
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       app:
@@ -37,6 +38,27 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+  worker:
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DB_CONNECTION: sqlite
+      DB_DATABASE: /data/database/database.sqlite
+      SIMPLEVIEW_DATA_PATH: /data
+      SIMPLEVIEW_SKIP_BOOTSTRAP: "true"
+    command: ["php", "artisan", "queue:work", "database", "--queue=media,default", "--sleep=1", "--tries=2", "--timeout=900", "--max-time=3600"]
+    volumes:
+      - ./data:/data
+      - ./.env:/var/www/html/.env:ro
+      - public_assets:/var/www/html/public
+    depends_on:
+      app:
+        condition: service_healthy
+    networks: [simpleview]
+    stop_grace_period: 30s
   scheduler:
     build:
       context: .

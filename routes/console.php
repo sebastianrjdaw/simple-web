@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\MediaAsset;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -12,3 +13,4 @@ Schedule::command('simpleview:backup')->everyFifteenMinutes()->withoutOverlappin
 Schedule::command('simpleview:storage-report --refresh')->everyFiveMinutes()->withoutOverlapping();
 Schedule::command('simpleview:storage-reconcile')->dailyAt(str_pad((string) env('SIMPLEVIEW_STORAGE_DEEP_SCAN_HOUR', 3), 2, '0', STR_PAD_LEFT).':15')->withoutOverlapping();
 Schedule::command('simpleview:cleanup-storage --temp --logs --expired-backups --orphan-thumbnails --force')->dailyAt('04:10')->withoutOverlapping();
+Schedule::call(fn () => MediaAsset::where('status', 'duplicate')->where('processing_completed_at', '<', now()->subDay())->forceDelete())->dailyAt('04:20')->name('cleanup-media-processing-markers')->withoutOverlapping();
