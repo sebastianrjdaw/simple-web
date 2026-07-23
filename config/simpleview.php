@@ -15,6 +15,8 @@ return [
     'video_max_start_wait_seconds' => max(5, min(60, (int) env('SIMPLEVIEW_VIDEO_MAX_START_WAIT_SECONDS', 20))),
     'video_stall_report_seconds' => max(5, min(120, (int) env('SIMPLEVIEW_VIDEO_STALL_REPORT_SECONDS', 15))),
     'video_preload_next' => filter_var(env('SIMPLEVIEW_VIDEO_PRELOAD_NEXT', true), FILTER_VALIDATE_BOOL),
+    'embed_default_duration_ms' => max(30000, min(86400000, (int) env('SIMPLEVIEW_EMBED_DEFAULT_DURATION_MS', 300000))),
+    'embed_load_timeout_seconds' => max(5, min(60, (int) env('SIMPLEVIEW_EMBED_LOAD_TIMEOUT_SECONDS', 20))),
     'backup_frequency_days' => min(2, max(1, (int) env('SIMPLEVIEW_BACKUP_FREQUENCY_DAYS', 2))),
     'backup_time' => env('SIMPLEVIEW_BACKUP_TIME', '03:00'),
     'backup_retention_count' => max(3, (int) env('SIMPLEVIEW_BACKUP_RETENTION_COUNT', 7)),

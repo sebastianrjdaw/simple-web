@@ -11,6 +11,7 @@ class MediaController extends Controller
     public function stream(MediaAsset $mediaAsset)
     {
         abort_unless($mediaAsset->status === 'ready', 404);
+        abort_unless(in_array($mediaAsset->media_type, ['image', 'video'], true), 404);
         if (config('simpleview.accel_redirect')) {
             return response('', 200, [
                 'X-Accel-Redirect' => $this->internalPath('_protected_media', $mediaAsset->storage_path),
@@ -31,6 +32,7 @@ class MediaController extends Controller
 
     public function thumbnail(MediaAsset $mediaAsset)
     {
+        abort_unless(in_array($mediaAsset->media_type, ['image', 'video'], true), 404);
         abort_unless($mediaAsset->thumbnail_path, 404);
         if (config('simpleview.accel_redirect')) {
             return response('', 200, [
@@ -46,6 +48,7 @@ class MediaController extends Controller
 
     public function download(MediaAsset $mediaAsset)
     {
+        abort_unless(in_array($mediaAsset->media_type, ['image', 'video'], true), 404);
         if (config('simpleview.accel_redirect')) {
             return response('', 200, [
                 'X-Accel-Redirect' => $this->internalPath('_protected_media', $mediaAsset->storage_path),

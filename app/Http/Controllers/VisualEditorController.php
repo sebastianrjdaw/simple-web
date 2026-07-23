@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Filament\Resources\LayoutResource;
 use App\Models\Layout;
 use App\Models\MediaAsset;
+use App\Services\AimHarderEmbedService;
 use App\Services\MediaDeletionService;
 use App\Services\MediaIngestionService;
 use App\Services\PublicationService;
@@ -86,7 +87,22 @@ class VisualEditorController extends Controller
             }
         }
 
-return response()->json(['items' => $items], 202);
+        return response()->json(['items' => $items], 202);
+    }
+
+    public function addAimHarder(Request $request, Layout $layout, AimHarderEmbedService $embeds)
+    {
+        $this->draft($layout);
+        $data = $request->validate([
+            'content' => 'required|string|max:4096',
+            'name' => 'nullable|string|max:255',
+        ]);
+        $media = $embeds->create($data['content'], $data['name'] ?? null);
+
+        return response()->json([
+            'message' => 'Contenido de AimHarder añadido a la biblioteca.',
+            'media' => $this->mediaPayload($media),
+        ], 201);
     }
 
     public function processingStatus(Request $request, Layout $layout)
@@ -100,7 +116,7 @@ return response()->json(['items' => $items], 202);
                 return ['request_id' => $media->id, 'status' => 'ready', 'media' => $this->mediaPayload($media)];
             }
 
-return ['request_id' => $media->id, 'status' => $media->status, 'name' => $media->display_name, 'message' => $media->validation_message];
+            return ['request_id' => $media->id, 'status' => $media->status, 'name' => $media->display_name, 'message' => $media->validation_message];
         });
 
         return response()->json(['items' => $items]);
@@ -145,7 +161,7 @@ return ['request_id' => $media->id, 'status' => $media->status, 'name' => $media
 
     private function mediaPayload(MediaAsset $m): array
     {
-        return ['id' => $m->id, 'media_asset_id' => $m->id, 'name' => $m->display_name, 'type' => $m->media_type, 'mime' => $m->mime_type, 'size' => $m->file_size, 'width' => $m->width, 'height' => $m->height, 'duration_ms' => $m->duration_ms, 'thumbnail' => route('media.thumbnail', $m)];
+        return ['id' => $m->id, 'media_asset_id' => $m->id, 'name' => $m->display_name, 'type' => $m->media_type, 'mime' => $m->mime_type, 'size' => $m->file_size, 'width' => $m->width, 'height' => $m->height, 'duration_ms' => $m->duration_ms, 'default_duration_ms' => $m->media_type === 'embed' ? config('simpleview.embed_default_duration_ms') : null, 'provider' => $m->external_provider, 'external_url' => $m->external_url, 'thumbnail' => $m->media_type === 'embed' ? asset('images/aimharder-embed.svg') : route('media.thumbnail', $m)];
     }
 
     private function processingPayload(MediaAsset $m): array

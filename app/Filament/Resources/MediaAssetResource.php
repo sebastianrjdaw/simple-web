@@ -43,7 +43,9 @@ class MediaAssetResource extends Resource
         return $table->columns([
             Tables\Columns\ImageColumn::make('thumbnail_path')->label('')->disk('thumbnails')->square(),
             Tables\Columns\TextColumn::make('display_name')->label('Nombre')->searchable()->sortable(),
-            Tables\Columns\TextColumn::make('media_type')->label('Tipo')->badge()->formatStateUsing(fn ($state) => $state === 'image' ? 'Imagen' : 'Vídeo'),
+            Tables\Columns\TextColumn::make('media_type')->label('Tipo')->badge()->formatStateUsing(fn ($state) => match ($state) {
+                'image' => 'Imagen', 'video' => 'Vídeo', 'embed' => 'AimHarder', default => $state,
+            }),
             Tables\Columns\TextColumn::make('file_size')->label('Tamaño')->formatStateUsing(fn ($state) => number_format($state / 1048576, 1).' MB')->sortable(),
             Tables\Columns\TextColumn::make('status')->label('Estado')->badge()->formatStateUsing(fn ($state) => match ($state) {
                 'ready' => 'Listo','processing' => 'Procesando','duplicate' => 'Duplicado reutilizado','error' => 'Revisar',default => $state
@@ -54,14 +56,14 @@ class MediaAssetResource extends Resource
             Tables\Columns\TextColumn::make('last_used_at')->label('Último uso')->dateTime('d/m/Y H:i')->sortable()->placeholder('Nunca'),
             Tables\Columns\TextColumn::make('created_at')->label('Subido')->dateTime('d/m/Y H:i')->sortable(),
         ])->filters([
-            Tables\Filters\SelectFilter::make('media_type')->label('Tipo')->options(['image' => 'Imágenes', 'video' => 'Vídeos']),
+            Tables\Filters\SelectFilter::make('media_type')->label('Tipo')->options(['image' => 'Imágenes', 'video' => 'Vídeos', 'embed' => 'AimHarder']),
             Tables\Filters\SelectFilter::make('status')->label('Estado')->options(['ready' => 'Listo', 'processing' => 'Procesando', 'error' => 'Con error']),
             Tables\Filters\Filter::make('unused')->label('Sin uso')->query(fn (Builder $query) => $query->doesntHave('playlistItems')),
             Tables\Filters\Filter::make('large')->label('Más de 500 MB')->query(fn (Builder $query) => $query->where('file_size', '>=', 500 * 1024 * 1024)),
             Tables\Filters\Filter::make('never_used')->label('Nunca utilizados')->query(fn (Builder $query) => $query->whereNull('last_used_at')),
-    ])
+        ])
             ->actions([
-                Tables\Actions\Action::make('download')->label('Descargar')->icon('heroicon-o-arrow-down-tray')->visible(fn (MediaAsset $record) => $record->status === 'ready')->url(fn (MediaAsset $record) => route('media.download', $record)),
+                Tables\Actions\Action::make('download')->label('Descargar')->icon('heroicon-o-arrow-down-tray')->visible(fn (MediaAsset $record) => $record->status === 'ready' && $record->media_type !== 'embed')->url(fn (MediaAsset $record) => route('media.download', $record)),
                 Tables\Actions\Action::make('uses')->label('Ver usos')->icon('heroicon-o-map')->modalHeading(fn (MediaAsset $record) => 'Usos de '.$record->display_name)->modalSubmitAction(false)->modalCancelActionLabel('Cerrar')->modalContent(fn (MediaAsset $record) => view('filament.media-uses', ['asset' => $record, 'classification' => app(MediaDeletionService::class)->classify($record)])),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('delete_safe')
@@ -93,7 +95,7 @@ class MediaAssetResource extends Resource
                     }),
             ])
             ->bulkActions([
-            Tables\Actions\BulkAction::make('delete_selected')
+                Tables\Actions\BulkAction::make('delete_selected')
                     ->label('Eliminar seleccionados')
                     ->icon('heroicon-o-trash')
                     ->color('danger')
@@ -102,7 +104,7 @@ class MediaAssetResource extends Resource
                         $result = app(MediaDeletionService::class)->bulk($records, (int) auth()->id(), true);
                         Notification::make()->title($result['deleted'].' contenido(s) eliminado(s)')->body($result['blocked'].' bloqueado(s). Espacio liberado: '.number_format($result['bytes'] / 1048576, 1).' MB.')->success()->send();
                     }),
-        ])
+            ])
             ->poll('3s')->defaultSort('created_at', 'desc');
     }
 
@@ -124,6 +126,6 @@ class MediaAssetResource extends Resource
         $functional = (int) config('simpleview.max_upload_mb');
         $hard = (int) config('simpleview.max_upload_hard_mb');
 
-        return $functional <= 0 ? "Sin límite funcional. Límite técnico: {$hard} MB por archivo." : 'Máximo '.min($functional,$hard).' MB por archivo.';
+        return $functional <= 0 ? "Sin límite funcional. Límite técnico: {$hard} MB por archivo." : 'Máximo '.min($functional, $hard).' MB por archivo.';
     }
 }

@@ -29,6 +29,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/admin/layouts/{layout}/visual/state', [VisualEditorController::class, 'state'])->name('visual-editor.state');
     Route::patch('/admin/layouts/{layout}/visual', [VisualEditorController::class, 'save'])->name('visual-editor.save');
     Route::post('/admin/layouts/{layout}/visual/upload', [VisualEditorController::class, 'upload'])->name('visual-editor.upload');
+    Route::post('/admin/layouts/{layout}/visual/aimharder', [VisualEditorController::class, 'addAimHarder'])->name('visual-editor.aimharder');
     Route::post('/admin/layouts/{layout}/visual/processing-status', [VisualEditorController::class, 'processingStatus'])->name('visual-editor.processing-status');
     Route::get('/admin/layouts/{layout}/visual/media/{media}/uses', [VisualEditorController::class, 'mediaUses'])->name('visual-editor.media-uses');
     Route::delete('/admin/layouts/{layout}/visual/media/{media}', [VisualEditorController::class, 'deleteMedia'])->name('visual-editor.media-delete');

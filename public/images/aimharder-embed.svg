@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" role="img" aria-labelledby="title desc">
+  <title id="title">Contenido AimHarder</title>
+  <desc id="desc">Vista previa de contenido externo de AimHarder</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#111827"/>
+      <stop offset="1" stop-color="#312e81"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="400" rx="24" fill="url(#background)"/>
+  <rect x="86" y="78" width="468" height="244" rx="18" fill="#fff" opacity=".1" stroke="#a5b4fc" stroke-width="4"/>
+  <path d="M160 145h320M160 196h210M160 247h260" stroke="#c7d2fe" stroke-width="18" stroke-linecap="round"/>
+  <circle cx="480" cy="247" r="34" fill="#6366f1"/>
+  <path d="m466 247 10 10 20-22" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="320" y="365" fill="#fff" font-family="Arial, sans-serif" font-size="31" font-weight="700" text-anchor="middle">AimHarder</text>
+</svg>

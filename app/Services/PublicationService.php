@@ -20,8 +20,10 @@ class PublicationService
             'zones' => $layout->zones->map(fn ($z) => ['key' => $z->zone_key, 'position' => $z->position,
                 'transition' => $z->transition_type, 'transition_ms' => $z->transition_duration_ms,
                 'items' => $z->items->map(fn ($i) => ['id' => $i->media->id, 'type' => $i->media->media_type,
-                    'url' => route('media.stream', $i->media),
-                    'duration_ms' => $i->media->media_type === 'video' ? $i->media->duration_ms : ($i->image_duration_ms ?: $z->image_duration_default_ms),
+                    'name' => $i->media->display_name,
+                    'provider' => $i->media->external_provider,
+                    'url' => $i->media->media_type === 'embed' ? $i->media->external_url : route('media.stream', $i->media),
+                    'duration_ms' => $i->media->media_type === 'video' ? $i->media->duration_ms : ($i->image_duration_ms ?: ($i->media->media_type === 'embed' ? config('simpleview.embed_default_duration_ms') : $z->image_duration_default_ms)),
                     'size' => $i->media->file_size,
                     'fit' => $i->image_fit ?: $z->image_fit_default, 'transition' => $i->transition_type ?: $z->transition_type,
                     'transition_ms' => $i->transition_duration_ms ?: $z->transition_duration_ms])->values()])->values()];
@@ -40,7 +42,7 @@ class PublicationService
         if ($draft->zones->flatMap->items->contains(fn ($i) => $i->media->status !== 'ready')) {
             throw ValidationException::withMessages(['layout' => 'Hay archivos que no están listos.']);
         }
-        if ($draft->zones->flatMap->items->contains(fn ($i) => ! Storage::disk('media')->exists($i->media->storage_path))) {
+        if ($draft->zones->flatMap->items->contains(fn ($i) => $i->media->media_type !== 'embed' && ! Storage::disk('media')->exists($i->media->storage_path))) {
             throw ValidationException::withMessages(['layout' => 'Falta uno de los archivos asignados.']);
         }
 
