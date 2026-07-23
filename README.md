@@ -29,6 +29,46 @@ docker compose ps
 
 El panel queda en `http://localhost/admin` (o `http://simpleview.local/admin` cuando mDNS esté configurado). El contenedor ejecuta las migraciones y crea una sola vez el administrador indicado en `.env`.
 
+## Recuperación del ordenador del box
+
+La rama `main` incluye un inicializador que corrige los permisos de `data/`,
+sincroniza los recursos públicos y espera a que la aplicación esté saludable
+antes de iniciar nginx, el worker y el scheduler.
+
+Si después de una actualización, apagado inesperado o cambio de equipo algún
+contenedor queda en `unhealthy`, ejecuta desde el directorio del proyecto:
+
+```bash
+./scripts/recover-box.sh
+```
+
+El script:
+
+- actualiza `main` únicamente mediante avance rápido;
+- conserva `.env`, SQLite y todos los archivos multimedia;
+- crea una copia de SQLite antes de reconstruir;
+- corrige propietarios y permisos para el usuario `www-data` del contenedor;
+- reconstruye y reintenta una vez sin caché si el primer arranque falla;
+- verifica healthchecks, migraciones, worker, scheduler, AimHarder y `/display`;
+- instala o valida Chromium, el usuario `display`, el login gráfico automático
+  y el autostart del modo kiosco en Ubuntu.
+
+Para recuperar el código actual sin acceso a Git:
+
+```bash
+./scripts/recover-box.sh --no-update
+```
+
+Para diagnosticar un servidor sin escritorio:
+
+```bash
+./scripts/recover-box.sh --skip-kiosk
+```
+
+El script nunca ejecuta `docker compose down -v` ni elimina `data/`. Si no
+puede corregir el problema después de dos intentos, termina con error y deja
+un registro de diagnóstico en `/tmp/simple-view-box-recovery-*.log`.
+
 ## Operación
 
 ```bash

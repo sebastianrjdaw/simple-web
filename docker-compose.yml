@@ -1,5 +1,18 @@
 services:
+  init-storage:
+    image: simple-view-app:latest
+    user: root
+    entrypoint: ["/bin/sh", "-lc"]
+    command:
+      - "mkdir -p /persistent-data/database /persistent-data/media /persistent-data/thumbnails /persistent-data/backups /persistent-data/logs /persistent-data/cache /persistent-public && cp -a /var/www/html/public/. /persistent-public/ && chown -R 33:33 /persistent-data /persistent-public"
+    volumes:
+      - ./data:/persistent-data
+      - public_assets:/persistent-public
+    network_mode: "none"
+    restart: "no"
+
   app:
+    image: simple-view-app:latest
     build:
       context: .
       dockerfile: docker/app/Dockerfile
@@ -13,6 +26,9 @@ services:
       - ./data:/data
       - ./.env:/var/www/html/.env:ro
       - public_assets:/var/www/html/public
+    depends_on:
+      init-storage:
+        condition: service_completed_successfully
     networks: [simpleview]
     healthcheck:
       test: ["CMD", "php", "artisan", "simpleview:health-check", "--quiet-json"]
@@ -30,6 +46,8 @@ services:
       - ./data:/data:ro
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
+      init-storage:
+        condition: service_completed_successfully
       app:
         condition: service_healthy
     networks: [simpleview]
@@ -39,9 +57,7 @@ services:
       timeout: 5s
       retries: 3
   worker:
-    build:
-      context: .
-      dockerfile: docker/app/Dockerfile
+    image: simple-view-app:latest
     restart: unless-stopped
     env_file: .env
     environment:
@@ -55,14 +71,14 @@ services:
       - ./.env:/var/www/html/.env:ro
       - public_assets:/var/www/html/public
     depends_on:
+      init-storage:
+        condition: service_completed_successfully
       app:
         condition: service_healthy
     networks: [simpleview]
     stop_grace_period: 30s
   scheduler:
-    build:
-      context: .
-      dockerfile: docker/app/Dockerfile
+    image: simple-view-app:latest
     restart: unless-stopped
     env_file: .env
     environment:
@@ -76,6 +92,8 @@ services:
       - ./.env:/var/www/html/.env:ro
       - public_assets:/var/www/html/public
     depends_on:
+      init-storage:
+        condition: service_completed_successfully
       app:
         condition: service_healthy
     networks: [simpleview]
