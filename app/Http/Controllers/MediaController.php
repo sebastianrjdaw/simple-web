@@ -15,12 +15,16 @@ class MediaController extends Controller
             return response('', 200, [
                 'X-Accel-Redirect' => $this->internalPath('_protected_media', $mediaAsset->storage_path),
                 'Content-Type' => $mediaAsset->mime_type,
+                'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_INLINE, $mediaAsset->original_filename, 'media.'.$mediaAsset->extension),
+                'Accept-Ranges' => 'bytes',
                 'Cache-Control' => 'public, max-age=31536000, immutable',
             ]);
         }
 
         return response()->file(Storage::disk('media')->path($mediaAsset->storage_path), [
             'Content-Type' => $mediaAsset->mime_type,
+            'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_INLINE, $mediaAsset->original_filename, 'media.'.$mediaAsset->extension),
+            'Accept-Ranges' => 'bytes',
             'Cache-Control' => 'public, max-age=31536000, immutable',
         ]);
     }
