@@ -24,6 +24,9 @@ class RecoveryScriptTest extends TestCase
         $this->assertStringContainsString('$display_home/Escritorio', $script);
         $this->assertStringContainsString('user-dirs.dirs', $script);
         $this->assertStringContainsString('chown -R "display:${display_group}" "$display_home/.config"', $script);
+        $this->assertStringContainsString('configure_storage_report_timer', $script);
+        $this->assertStringContainsString('OnUnitActiveSec=5min', $script);
+        $this->assertStringContainsString('systemctl start simple-view-storage-report.service', $script);
         $this->assertStringContainsString('start_stack clean', $script);
     }
 
@@ -37,6 +40,8 @@ class RecoveryScriptTest extends TestCase
         $this->assertStringContainsString('/home/display/Escritorio', $script);
         $this->assertStringContainsString('/home/display/.config/user-dirs.dirs', $script);
         $this->assertStringContainsString('chown -R display:display /home/display/.config', $script);
+        $this->assertStringContainsString('simple-view-storage-report.timer', $script);
+        $this->assertStringContainsString('OnUnitActiveSec=5min', $script);
     }
 
     public function test_compose_initializes_permissions_and_public_assets_before_app(): void

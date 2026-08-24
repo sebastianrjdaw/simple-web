@@ -81,5 +81,31 @@ rsync -a --delete --exclude '.env' --exclude 'data/' ./ /opt/simple-view/
 cd /opt/simple-view
 docker compose build
 docker compose up -d
+install -m 0644 /dev/stdin /etc/systemd/system/simple-view-storage-report.service <<'SERVICE'
+[Unit]
+Description=Actualiza las métricas de almacenamiento de Simple View
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/simple-view
+ExecStart=/opt/simple-view/scripts/storage-report.sh
+SERVICE
+install -m 0644 /dev/stdin /etc/systemd/system/simple-view-storage-report.timer <<'TIMER'
+[Unit]
+Description=Actualiza periódicamente las métricas de almacenamiento de Simple View
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+AccuracySec=30s
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+TIMER
+systemctl daemon-reload
+systemctl enable --now simple-view-storage-report.timer
+systemctl start simple-view-storage-report.service
 echo "Simple View preparado. Panel: http://$(hostname -I | awk '{print $1}')/admin"
 echo "El usuario display abrirá Chromium en modo kiosco después del próximo reinicio."

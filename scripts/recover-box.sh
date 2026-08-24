@@ -245,6 +245,50 @@ verify_application() {
         "${HTTP_BASE_URL}/images/aimharder-embed.svg" >/dev/null
 }
 
+configure_storage_report_timer() {
+    [[ "$(uname -s)" == "Linux" ]] || return
+    command -v systemctl >/dev/null 2>&1 || return
+
+    local service_tmp timer_tmp
+    service_tmp="$(mktemp)"
+    timer_tmp="$(mktemp)"
+    cat >"$service_tmp" <<EOF
+[Unit]
+Description=Actualiza las métricas de almacenamiento de Simple View
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=${ROOT}
+ExecStart=${ROOT}/scripts/storage-report.sh
+EOF
+    cat >"$timer_tmp" <<'EOF'
+[Unit]
+Description=Actualiza periódicamente las métricas de almacenamiento de Simple View
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+AccuracySec=30s
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
+    as_root install -m 0644 "$service_tmp" \
+        /etc/systemd/system/simple-view-storage-report.service
+    as_root install -m 0644 "$timer_tmp" \
+        /etc/systemd/system/simple-view-storage-report.timer
+    rm -f "$service_tmp" "$timer_tmp"
+    as_root systemctl daemon-reload
+    as_root systemctl enable --now simple-view-storage-report.timer
+    as_root systemctl start simple-view-storage-report.service
+    as_root systemctl is-active --quiet simple-view-storage-report.timer
+    as_root test -s "$DATA_DIR/metrics/storage-host.json"
+    log "Monitorización de almacenamiento verificada (cada cinco minutos)."
+}
+
 configure_kiosk() {
     [[ "$CONFIGURE_KIOSK" == true ]] || { log "Configuración de kiosco omitida."; return; }
     [[ "$(uname -s)" == "Linux" ]] || { warn "El kiosco automático solo se configura en Linux."; return; }
@@ -408,6 +452,7 @@ main() {
     fi
 
     verify_application
+    configure_storage_report_timer
     configure_kiosk
     docker compose ps
     if [[ "$KIOSK_READY" == true ]]; then
