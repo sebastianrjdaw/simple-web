@@ -72,6 +72,9 @@ un registro de diagnóstico en `/tmp/simple-view-box-recovery-*.log`.
 ## Operación
 
 ```bash
+./scripts/check-and-repair.sh
+./scripts/check-and-repair.sh --check-only
+docker compose exec app php artisan simpleview:doctor --repair
 ./scripts/health-check.sh
 docker compose logs -f
 docker compose exec app php artisan migrate --force
@@ -79,6 +82,13 @@ docker compose exec app php artisan simpleview:create-admin
 docker compose exec app php artisan simpleview:reset-admin-password
 docker compose logs -f worker
 ```
+
+`check-and-repair.sh` es la entrada recomendada por SSH: comprueba systemd,
+Docker, HTTP, SQLite, migraciones, directorios, almacenamiento y colas, y
+aplica solo reparaciones conservadoras. Desde el panel, la misma rutina de
+aplicación está disponible en **Inicio → Diagnóstico**. La ejecución web no
+tiene acceso privilegiado al host y nunca elimina contenido ni reintenta
+trabajos fallidos automáticamente.
 
 Los datos están en `data/`, fuera de las capas de los contenedores. La base SQLite se guarda en `data/database/database.sqlite`; los directorios de medios, miniaturas, copias, logs y caché ya están reservados para las fases siguientes.
 

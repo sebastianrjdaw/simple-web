@@ -28,6 +28,7 @@ class RecoveryScriptTest extends TestCase
         $this->assertStringContainsString('OnUnitActiveSec=5min', $script);
         $this->assertStringContainsString('systemctl start simple-view-storage-report.service', $script);
         $this->assertStringContainsString('start_stack clean', $script);
+        $this->assertFileExists(dirname(__DIR__, 2).'/scripts/check-and-repair.sh');
     }
 
     public function test_provisioning_repairs_the_kiosk_home_before_autostart(): void

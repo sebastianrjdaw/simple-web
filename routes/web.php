@@ -4,6 +4,7 @@ use App\Http\Controllers\BackupController;
 use App\Http\Controllers\DisplayController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\StorageController;
+use App\Http\Controllers\SystemDoctorController;
 use App\Http\Controllers\VisualEditorController;
 use App\Models\Layout;
 use Illuminate\Support\Facades\Route;
@@ -39,4 +40,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/admin/storage/refresh', [StorageController::class, 'refresh'])->name('storage.refresh');
     Route::delete('/admin/storage/unused', [StorageController::class, 'cleanup'])->name('storage.cleanup');
     Route::delete('/admin/storage/layouts', [StorageController::class, 'deleteLayouts'])->name('storage.layouts.cleanup');
+    Route::get('/admin/system/doctor', [SystemDoctorController::class, 'index'])->name('system-doctor.index');
+    Route::post('/admin/system/doctor', [SystemDoctorController::class, 'repair'])->middleware('throttle:3,1')->name('system-doctor.repair');
 });
