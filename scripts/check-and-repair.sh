@@ -21,13 +21,20 @@ while (($#)); do
 done
 
 command -v docker >/dev/null 2>&1 || { echo "ERROR: Docker no está instalado." >&2; exit 1; }
-docker compose version >/dev/null
-docker compose config --quiet
+root_prefix=()
+docker_command=(docker)
+if ((EUID != 0)) && ! docker info >/dev/null 2>&1; then
+    command -v sudo >/dev/null 2>&1 || { echo "ERROR: Docker requiere root y sudo no está instalado." >&2; exit 1; }
+    sudo -v
+    root_prefix=(sudo)
+    docker_command=(sudo docker)
+fi
+"${docker_command[@]}" compose version >/dev/null
+"${docker_command[@]}" compose config --quiet
 
 if [[ "$REPAIR" == true ]]; then
     echo "Preparando servicios y almacenamiento persistente..."
-    root_prefix=()
-    if ((EUID != 0)) && command -v sudo >/dev/null 2>&1; then
+    if ((EUID != 0)) && ((${#root_prefix[@]} == 0)) && command -v sudo >/dev/null 2>&1; then
         sudo -v
         root_prefix=(sudo)
     fi
@@ -48,7 +55,7 @@ if [[ "$REPAIR" == true ]]; then
             "${root_prefix[@]}" chown -R "display:$display_group" "$display_home/.config"
         fi
     fi
-    docker compose up -d --remove-orphans
+    "${docker_command[@]}" compose up -d --remove-orphans
     if ((EUID == 0)); then
         ./scripts/storage-report.sh
     elif ((${#root_prefix[@]})); then
@@ -62,7 +69,7 @@ args=(simpleview:doctor)
 [[ "$REPAIR" == true ]] && args+=(--repair)
 [[ "$JSON" == true ]] && args+=(--json)
 doctor_status=0
-docker compose exec -T app php artisan "${args[@]}" || doctor_status=$?
+"${docker_command[@]}" compose exec -T app php artisan "${args[@]}" || doctor_status=$?
 
 failed=0
 for unit in docker expositor-remoto simple-view-storage-report.timer; do
@@ -74,7 +81,7 @@ for unit in docker expositor-remoto simple-view-storage-report.timer; do
     fi
 done
 for service in app web worker scheduler; do
-    if ! docker compose ps --status running --services | grep -qx "$service"; then
+    if ! "${docker_command[@]}" compose ps --status running --services | grep -qx "$service"; then
         echo "ERROR: el servicio $service no está ejecutándose." >&2
         failed=1
     fi
@@ -89,5 +96,5 @@ else
     failed=1
 fi
 
-docker compose ps
+"${docker_command[@]}" compose ps
 ((doctor_status == 0 && failed == 0))
