@@ -22,7 +22,6 @@ services:
       DB_CONNECTION: sqlite
       DB_DATABASE: /data/database/database.sqlite
       SIMPLEVIEW_DATA_PATH: /data
-      SIMPLEVIEW_ACCEL_REDIRECT: "true"
     volumes:
       - ./data:/data
       - ./.env:/var/www/html/.env:ro
