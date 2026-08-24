@@ -266,6 +266,46 @@ configure_kiosk() {
         as_root useradd --create-home --shell /bin/bash display
     fi
 
+    local display_home display_group user_dirs_tmp
+    display_home="$(getent passwd display | cut -d: -f6)"
+    display_group="$(id -gn display)"
+    [[ "$display_home" == /* ]] || die "El usuario display no tiene una carpeta personal válida."
+
+    # GNU install does not repair the owner of an already existing parent when
+    # only a nested directory is requested.  A root-owned .config prevents
+    # dconf and GNOME from starting correctly and makes Desktop Icons restart
+    # continuously with the visible "Sin Carpeta personal" error.
+    as_root install -d -o display -g "$display_group" -m 0750 "$display_home"
+    as_root install -d -o display -g "$display_group" -m 0755 \
+        "$display_home/.config" \
+        "$display_home/.config/autostart" \
+        "$display_home/Escritorio" \
+        "$display_home/Descargas" \
+        "$display_home/Plantillas" \
+        "$display_home/Público" \
+        "$display_home/Documentos" \
+        "$display_home/Música" \
+        "$display_home/Imágenes" \
+        "$display_home/Vídeos"
+    as_root install -d -o display -g "$display_group" -m 0700 \
+        "$display_home/.config/dconf"
+    as_root chown -R "display:${display_group}" "$display_home/.config"
+
+    user_dirs_tmp="$(mktemp)"
+    cat >"$user_dirs_tmp" <<'EOF'
+XDG_DESKTOP_DIR="$HOME/Escritorio"
+XDG_DOWNLOAD_DIR="$HOME/Descargas"
+XDG_TEMPLATES_DIR="$HOME/Plantillas"
+XDG_PUBLICSHARE_DIR="$HOME/Público"
+XDG_DOCUMENTS_DIR="$HOME/Documentos"
+XDG_MUSIC_DIR="$HOME/Música"
+XDG_PICTURES_DIR="$HOME/Imágenes"
+XDG_VIDEOS_DIR="$HOME/Vídeos"
+EOF
+    as_root install -o display -g "$display_group" -m 0644 \
+        "$user_dirs_tmp" "$display_home/.config/user-dirs.dirs"
+    rm -f "$user_dirs_tmp"
+
     local kiosk_tmp desktop_tmp gdm_tmp
     kiosk_tmp="$(mktemp)"
     desktop_tmp="$(mktemp)"
@@ -296,9 +336,10 @@ X-GNOME-Autostart-enabled=true
 EOF
 
     as_root install -m 0755 "$kiosk_tmp" /usr/local/bin/simple-view-kiosk
-    as_root install -d -o display -g display /home/display/.config/autostart
-    as_root install -o display -g display -m 0644 \
-        "$desktop_tmp" /home/display/.config/autostart/simple-view.desktop
+    as_root install -d -o display -g "$display_group" \
+        "$display_home/.config/autostart"
+    as_root install -o display -g "$display_group" -m 0644 \
+        "$desktop_tmp" "$display_home/.config/autostart/simple-view.desktop"
     rm -f "$kiosk_tmp" "$desktop_tmp"
 
     if [[ -f /etc/gdm3/custom.conf ]]; then
@@ -335,9 +376,12 @@ EOF
     fi
 
     as_root test -x /usr/local/bin/simple-view-kiosk
-    as_root test -f /home/display/.config/autostart/simple-view.desktop
+    [[ "$(as_root stat -c '%U' "$display_home/.config")" == display ]]
+    [[ "$(as_root stat -c '%U' "$display_home/.config/dconf")" == display ]]
+    as_root test -d "$display_home/Escritorio"
+    as_root test -f "$display_home/.config/autostart/simple-view.desktop"
     as_root grep -q 'Exec=/usr/local/bin/simple-view-kiosk' \
-        /home/display/.config/autostart/simple-view.desktop
+        "$display_home/.config/autostart/simple-view.desktop"
     if [[ -f /etc/gdm3/custom.conf ]]; then
         as_root grep -q '^AutomaticLoginEnable=true$' /etc/gdm3/custom.conf
         as_root grep -q '^AutomaticLogin=display$' /etc/gdm3/custom.conf

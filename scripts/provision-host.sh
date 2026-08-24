@@ -24,7 +24,30 @@ systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target
 if ! id display >/dev/null 2>&1; then
   useradd --create-home --shell /bin/bash display
 fi
-install -d -o display -g display /home/display/.config/autostart
+install -d -o display -g display -m 0750 /home/display
+install -d -o display -g display -m 0755 \
+  /home/display/.config \
+  /home/display/.config/autostart \
+  /home/display/Escritorio \
+  /home/display/Descargas \
+  /home/display/Plantillas \
+  /home/display/Público \
+  /home/display/Documentos \
+  /home/display/Música \
+  /home/display/Imágenes \
+  /home/display/Vídeos
+install -d -o display -g display -m 0700 /home/display/.config/dconf
+chown -R display:display /home/display/.config
+install -o display -g display -m 0644 /dev/stdin /home/display/.config/user-dirs.dirs <<'USERDIRS'
+XDG_DESKTOP_DIR="$HOME/Escritorio"
+XDG_DOWNLOAD_DIR="$HOME/Descargas"
+XDG_TEMPLATES_DIR="$HOME/Plantillas"
+XDG_PUBLICSHARE_DIR="$HOME/Público"
+XDG_DOCUMENTS_DIR="$HOME/Documentos"
+XDG_MUSIC_DIR="$HOME/Música"
+XDG_PICTURES_DIR="$HOME/Imágenes"
+XDG_VIDEOS_DIR="$HOME/Vídeos"
+USERDIRS
 install -m 0755 /dev/stdin /usr/local/bin/simple-view-kiosk <<'KIOSK'
 #!/usr/bin/env bash
 xset s off

@@ -20,7 +20,23 @@ class RecoveryScriptTest extends TestCase
         $this->assertStringContainsString('waitForEmbed', $script);
         $this->assertStringContainsString('simple-view-kiosk', $script);
         $this->assertStringContainsString('AutomaticLogin=display', $script);
+        $this->assertStringContainsString('$display_home/.config/dconf', $script);
+        $this->assertStringContainsString('$display_home/Escritorio', $script);
+        $this->assertStringContainsString('user-dirs.dirs', $script);
+        $this->assertStringContainsString('chown -R "display:${display_group}" "$display_home/.config"', $script);
         $this->assertStringContainsString('start_stack clean', $script);
+    }
+
+    public function test_provisioning_repairs_the_kiosk_home_before_autostart(): void
+    {
+        $script = file_get_contents(dirname(__DIR__, 2).'/scripts/provision-host.sh');
+
+        $this->assertIsString($script);
+        $this->assertStringContainsString('install -d -o display -g display -m 0755', $script);
+        $this->assertStringContainsString('/home/display/.config/dconf', $script);
+        $this->assertStringContainsString('/home/display/Escritorio', $script);
+        $this->assertStringContainsString('/home/display/.config/user-dirs.dirs', $script);
+        $this->assertStringContainsString('chown -R display:display /home/display/.config', $script);
     }
 
     public function test_compose_initializes_permissions_and_public_assets_before_app(): void
