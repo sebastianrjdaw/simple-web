@@ -1,2 +1,12 @@
 FROM nginx:1.27-alpine
+
+# Laravel stores private media as UID/GID 33 with mode 0600. Run only the
+# unprivileged Nginx workers with that identity so X-Accel-Redirect can read
+# media through the read-only volume without making the files world-readable.
+RUN set -eux; \
+    deluser nginx; \
+    delgroup nginx 2>/dev/null || true; \
+    addgroup -S -g 33 nginx; \
+    adduser -S -D -H -u 33 -G nginx -s /sbin/nologin nginx
+
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf

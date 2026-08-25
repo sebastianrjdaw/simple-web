@@ -22,6 +22,7 @@ services:
       DB_CONNECTION: sqlite
       DB_DATABASE: /data/database/database.sqlite
       SIMPLEVIEW_DATA_PATH: /data
+      SIMPLEVIEW_ACCEL_REDIRECT: "true"
     volumes:
       - ./data:/data
       - ./.env:/var/www/html/.env:ro
@@ -37,7 +38,10 @@ services:
       retries: 3
       start_period: 30s
   web:
-    image: nginx:1.27-alpine
+    image: simple-view-nginx:latest
+    build:
+      context: .
+      dockerfile: docker/nginx/Dockerfile.coolify
     restart: unless-stopped
     ports:
       - "${SIMPLEVIEW_HTTP_PORT:-80}:80"
